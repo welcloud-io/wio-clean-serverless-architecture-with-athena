@@ -44,7 +44,7 @@ In the AWS console, Go to DynamoDB>Tables>CleanServerlessTable>Explore Table Ite
 
 Verify the item has been inserted
 
-## Test SQS Queue
+## Test SQS Queue & Athena
 
 Open 
 `lambda/simple_lambda.py`
