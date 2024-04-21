@@ -1,58 +1,78 @@
+## Prerequisite
 
-# Welcome to your CDK Python project!
+- Python 3.9 installed
 
-This is a blank project for CDK development with Python.
+- CDK >= 2.133 installed
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Deploy architecture
 
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
+If you want to receive sms from sns:
 
-To manually create a virtualenv on MacOS and Linux:
+Open 
+`_clean_serverless_architecture_demo/_clean_serverless_architecture_demo_stack.py`
 
+then, put a valid phone number in the sns subscription
 ```
-$ python3 -m venv .venv
-```
-
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
-
-```
-$ source .venv/bin/activate
+        sub_sms = sns.Subscription(self, "SubscriptionSMS",
+            endpoint="+33600000000", # <========== Replace with a valid phone number
+            protocol=sns.SubscriptionProtocol.SMS,
+            topic=topic
+        )
 ```
 
-If you are a Windows platform, you would activate the virtualenv like this:
+In the terminal:
 
 ```
-% .venv\Scripts\activate.bat
+$> cdk deploy
 ```
 
-Once the virtualenv is activated, you can install the required dependencies.
+## Test API
 
+In the AWS console, go to API Gateway>Endpoint>Any>Test
+
+Request body:
 ```
-$ pip install -r requirements.txt
+{
+    "stock_id": "A000",
+    "stock_level": 1
+}
 ```
 
-At this point you can now synthesize the CloudFormation template for this code.
+Click on [TEST] button
 
+In the AWS console, Go to DynamoDB>Tables>CleanServerlessTable>Explore Table Items
+
+Verify the item has been inserted
+
+## Test SQS Queue
+
+Open 
+`lambda/simple_lambda.py`
+
+replace 
+`api_gateway_adapter(event)`
+with
+`sqs_adapter_receive_message(event)`
+
+In the terminal:
 ```
-$ cdk synth
+$> cdk deploy
 ```
 
-To add additional dependencies, for example other CDK libraries, just add
-them to your `setup.py` file and rerun the `pip install -r requirements.txt`
-command.
+Execute sqs script
+```
+$>python put-stock-to-sqs.py
+```
 
-## Useful commands
+When finished, in the AWS console, go to Athena
 
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
+execute sql statement:
+```sql
+SELECT * FROM "demo"."stock_level" limit 10;
+```
 
-Enjoy!
+Verify the items have been inserted
+
+---
+N.B.: You should not receive any sms in this test since the script does 
+not generate values lower or equal to 2
